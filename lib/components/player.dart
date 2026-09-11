@@ -62,7 +62,7 @@ class Player extends RectangleComponent
   @override
   void onGameResize(Vector2 size) {
     super.onGameResize(size);
-    position.y = position.y.clamp(topPadding, size.y - bottomPadding);
+    _clampY();
     _clampX();
   }
 
@@ -223,6 +223,11 @@ class Player extends RectangleComponent
 
   /// 限制玩家不能移动到 HUD 区域或屏幕底部之外。
   void _clampY() {
-    position.y = position.y.clamp(topPadding, game.size.y - bottomPadding);
+    // 锚点是中心，所以要按半个高度换取边缘可达的最小/最大值。
+    final halfHeight = size.y / 2;
+    position.y = position.y.clamp(
+      topPadding + halfHeight,
+      game.size.y - bottomPadding - halfHeight,
+    );
   }
 }

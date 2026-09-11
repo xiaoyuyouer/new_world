@@ -141,21 +141,22 @@ class DodgeGame extends FlameGame
       ..addAll(overlaysFor(flow.phase));
   }
 
-  /// 更新游戏倒计时。
+  /// 推进倒计时，再更新子组件。
+  ///
+  /// 时间耗尽时会先把阶段切到 gameOver，因此本帧剩余的下落物、
+  /// 碰撞和生成都不会再执行，避免"死后还被打"和"多余生成"。
   @override
   void update(double dt) {
-    super.update(dt);
-    // 待开始、暂停和结束状态都不应该继续倒计时。
-    if (!isPlaying) {
-      return;
+    if (isPlaying) {
+      final isTimeUp = round.advanceTimer(dt);
+      hud.updateTimer(round.timeLeft);
+      if (isTimeUp) {
+        gameOver();
+      }
     }
 
-    // 用 dt 推进倒计时，保证不同帧率下计时一致。
-    final isTimeUp = round.advanceTimer(dt);
-    hud.updateTimer(round.timeLeft);
-    if (isTimeUp) {
-      gameOver();
-    }
+    // 暂停或结束时也必须调用一次：生命周期队列和 UI 动画都在这里推进。
+    super.update(dt);
   }
 
   /// 创建并加入一个下落物。
