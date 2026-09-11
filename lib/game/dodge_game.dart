@@ -6,11 +6,11 @@ import '../components/falling_item.dart';
 import '../components/hud.dart';
 import '../components/player.dart';
 import '../models/game_settings.dart';
+import '../ui/overlays/game_overlay_config.dart';
 import 'falling_item_spawner.dart';
 import 'game_flow.dart';
 import 'game_round.dart';
 import 'game_storage.dart';
-import 'overlay_mapping.dart';
 
 /// Dodge 游戏的总控制器。
 ///
@@ -204,8 +204,7 @@ class DodgeGame extends FlameGame
     }
 
     flow.gameOver();
-    round.wasNewBest = round.score > highScore;
-    if (round.wasNewBest) {
+    if (round.finishAgainst(highScore)) {
       // 只有超过历史最高分时才写入本地存储。
       highScore = round.score;
       hud.updateHighScore(highScore);
@@ -226,8 +225,9 @@ class DodgeGame extends FlameGame
 
   /// 清理本局实体和数据，并回到待开始状态。
   void restart() {
-    // 复制 children 后再删除，避免遍历集合时同时修改集合。
-    for (final item in world.children.whereType<FallingItem>().toList()) {
+    // 下落物由 spawnFallingItem 用 add 挂在本游戏下，所以清理的是 children。
+    // 复制成列表再删除，避免遍历集合时同时修改集合。
+    for (final item in children.whereType<FallingItem>().toList()) {
       item.removeFromParent();
     }
 

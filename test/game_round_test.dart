@@ -26,7 +26,7 @@ void main() {
       round.registerDodge(hardSettings);
       round.loseLife();
       round.advanceTimer(10);
-      round.wasNewBest = true;
+      round.finishAgainst(0);
 
       round.reset(easySettings);
 
@@ -70,11 +70,39 @@ void main() {
       expect(round.lives, 4);
     });
 
+    test('生命耗尽后继续调用也不会变成负数', () {
+      final round = GameRound()..reset(easySettings);
+      round.loseLife();
+
+      expect(round.loseLife(), isTrue);
+      expect(round.lives, 0);
+    });
+
     test('时间耗尽时归零并返回 true', () {
       final round = GameRound()..reset(hardSettings);
       expect(round.advanceTimer(59), isFalse);
       expect(round.advanceTimer(2), isTrue);
       expect(round.timeLeft, 0, reason: '不应显示负数时间');
+    });
+  });
+
+  group('finishAgainst 本局结算', () {
+    test('超过历史最高分时记录 New Best', () {
+      final round = GameRound()..reset(hardSettings);
+      round
+        ..registerDodge(hardSettings)
+        ..registerDodge(hardSettings);
+
+      expect(round.finishAgainst(1), isTrue);
+      expect(round.wasNewBest, isTrue);
+    });
+
+    test('没有超过历史最高分时不记录 New Best', () {
+      final round = GameRound()..reset(hardSettings);
+      round.registerDodge(hardSettings);
+
+      expect(round.finishAgainst(1), isFalse);
+      expect(round.wasNewBest, isFalse);
     });
   });
 }

@@ -1,8 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:new_world/game/game_flow.dart';
 import 'package:new_world/game/game_phase.dart';
-import 'package:new_world/game/overlay_mapping.dart';
-import 'package:new_world/game/overlay_names.dart';
+import 'package:new_world/ui/overlays/game_overlay_config.dart';
 
 /// 阶段状态机的单元测试。
 ///
@@ -45,6 +44,7 @@ void main() {
 
       flow.openSettings();
       expect(flow.phase, GamePhase.settings);
+      expect(flow.isPlaying, isFalse, reason: '设置页打开时游戏应暂停推进');
 
       flow.closeSettings();
       expect(flow.phase, GamePhase.playing);

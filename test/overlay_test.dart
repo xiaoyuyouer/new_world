@@ -1,6 +1,8 @@
+import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:new_world/game/dodge_game.dart';
 import 'package:new_world/app/dodge_app.dart';
+import 'package:new_world/components/falling_item.dart';
 import 'package:new_world/game/game_storage.dart';
 import 'package:new_world/models/game_settings.dart';
 import 'package:new_world/ui/game_overlays.dart';
@@ -26,6 +28,12 @@ Future<DodgeGame> pumpGame(WidgetTester tester) async {
   await tester.pump();
   return game;
 }
+
+/// 读取 HUD 当前显示的所有文本，验证游戏数据是否正确同步到画面。
+List<String> hudTexts(DodgeGame game) => game.hud.children
+    .whereType<TextComponent>()
+    .map((component) => component.text)
+    .toList();
 
 void main() {
   /// 每个测试都使用干净的内存版 SharedPreferences。
@@ -108,6 +116,52 @@ void main() {
     await tester.pump();
     expect(find.byType(GameOverOverlay), findsNothing);
     expect(find.byType(ReadyOverlay), findsOneWidget);
+  });
+
+  testWidgets('重开会清理上一局残留的下落物', (tester) async {
+    final game = await pumpGame(tester);
+    game.start();
+
+    game.spawnFallingItem();
+    await tester.pump();
+    game.spawnFallingItem();
+    await tester.pump();
+    expect(
+      game.children.whereType<FallingItem>(),
+      isNotEmpty,
+      reason: '前置条件：场上应当已经有下落物',
+    );
+
+    game.restart();
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      game.children.whereType<FallingItem>(),
+      isEmpty,
+      reason: '重开后若残留下落物，新一局会立刻砸到玩家并在出屏时白送分',
+    );
+    expect(game.isReady, isTrue);
+  });
+
+  testWidgets('DodgeGame 会协调本局数据、HUD 与结束流程', (tester) async {
+    final game = await pumpGame(tester);
+    game.start();
+
+    game.onItemDodged();
+    expect(game.round.score, 1);
+    expect(hudTexts(game), contains('Score: 1'));
+
+    final livesBeforeHit = game.round.lives;
+    game.onPlayerHit(FallingItem());
+    expect(game.round.lives, livesBeforeHit - 1);
+    expect(hudTexts(game), contains('♥' * (livesBeforeHit - 1) + '♡'));
+
+    game.update(game.round.timeLeft + 1);
+    await tester.pump();
+    expect(game.round.timeLeft, 0);
+    expect(game.isGameOver, isTrue);
+    expect(find.byType(GameOverOverlay), findsOneWidget);
   });
 
   /// 验证修改设置后，游戏实例和本地存储都会得到新值。

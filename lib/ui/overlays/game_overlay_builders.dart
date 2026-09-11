@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../game/dodge_game.dart';
-import '../../game/overlay_names.dart';
 import 'game_over_overlay.dart';
+import 'game_overlay_config.dart';
 import 'paused_overlay.dart';
 import 'playing_overlay.dart';
 import 'ready_overlay.dart';
