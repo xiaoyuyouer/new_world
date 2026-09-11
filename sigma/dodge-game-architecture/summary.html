@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>DodgeGame 架构学习总结</title>
+  <style>
+    :root{--bg:#08080c;--surface:rgba(255,255,255,.04);--surface-hover:rgba(255,255,255,.08);--border:rgba(255,255,255,.07);--text:#ededef;--text-secondary:rgba(255,255,255,.58);--text-tertiary:rgba(255,255,255,.3);--accent-1:#f59e0b;--accent-2:#ef4444;--accent-gradient:linear-gradient(135deg,var(--accent-1),var(--accent-2));--green:#34d399;--amber:#fbbf24;--red:#f87171;--font-mono:'SF Mono','Fira Code','JetBrains Mono',monospace;--font-sans:-apple-system,'Inter',system-ui,sans-serif;--radius:12px}
+    *{box-sizing:border-box}body{margin:0;min-height:100vh;color:var(--text);font-family:var(--font-sans);background:radial-gradient(circle at 10% 0%,rgba(245,158,11,.12),transparent 35%),radial-gradient(circle at 90% 20%,rgba(239,68,68,.09),transparent 32%),var(--bg)}main{max-width:720px;margin:auto;padding:48px 24px}h1{margin:0;font-size:34px;background:var(--accent-gradient);-webkit-background-clip:text;color:transparent}.done{display:inline-block;margin-top:12px;padding:5px 10px;border:1px solid rgba(52,211,153,.35);border-radius:999px;color:var(--green);font-size:13px}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:30px 0}.card{padding:18px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);backdrop-filter:blur(12px)}.number{font:700 28px var(--font-mono)}.label,p,li{color:var(--text-secondary);line-height:1.65}.bar{height:7px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden}.bar i{display:block;width:100%;height:100%;background:var(--green)}h2{margin-top:30px;font-size:18px}code{color:var(--amber);font-family:var(--font-mono)}@media(max-width:480px){main{padding:32px 18px}.grid{grid-template-columns:1fr}h1{font-size:27px}}
+  </style>
+</head>
+<body><main>
+  <h1>DodgeGame 架构学习总结</h1><span class="done">5 / 5 概念已掌握</span>
+  <section class="grid"><div class="card"><div class="number">100%</div><div class="label">总体掌握度</div></div><div class="card"><div class="number">2</div><div class="label">已解决的误解</div></div><div class="card"><div class="number">2</div><div class="label">完成的实践</div></div><div class="card"><div class="number">5</div><div class="label">掌握的概念</div></div></section>
+  <div class="bar"><i></i></div>
+  <h2>最终判断</h2>
+  <p><code>DodgeGame</code> 属性多，是因为它是 Flame 游戏的组合入口和协调器。字段数量本身不是问题；真正的风险是一个类亲自处理多种互不相关、会独立变化的实现细节。</p>
+  <h2>你识别出的边界</h2>
+  <ul><li><code>GameFlow</code>：管理阶段、设置页开关及返回状态。</li><li><code>GameRound</code>：管理 score、lives、timeLeft、spawnInterval、wasNewBest 等单局数据。</li><li><code>GameStorage</code>：负责数据如何持久化；DodgeGame 只决定何时调用。</li><li>Overlay：当前规模下可以继续由 DodgeGame 协调；复杂度明显增长后再提取。</li></ul>
+  <h2>以后判断类是否过重</h2>
+  <p>看三个问题：它有几种独立的变化原因？这些数据是否拥有相同生命周期？它是在调用职责清楚的对象，还是亲自实现所有底层细节？</p>
+</main></body></html>

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DodgeGame 架构学习路线</title>
+  <style>
+    :root { --bg:#08080c; --surface:rgba(255,255,255,.03); --surface-hover:rgba(255,255,255,.08); --border:rgba(255,255,255,.06); --text:#ededef; --text-secondary:rgba(255,255,255,.55); --text-tertiary:rgba(255,255,255,.3); --accent-1:#f59e0b; --accent-2:#ef4444; --accent-gradient:linear-gradient(135deg,var(--accent-1),var(--accent-2)); --green:#34d399; --amber:#fbbf24; --red:#f87171; --font-mono:'SF Mono','Fira Code','JetBrains Mono',monospace; --font-sans:-apple-system,'Inter',system-ui,sans-serif; --radius:12px; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; color:var(--text); font-family:var(--font-sans); background:radial-gradient(circle at 15% 0%,rgba(245,158,11,.12),transparent 32%),radial-gradient(circle at 90% 20%,rgba(239,68,68,.09),transparent 30%),var(--bg); }
+    main { max-width:720px; margin:auto; padding:48px 24px; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:24px; margin-bottom:36px; }
+    h1 { margin:0 0 10px; font-size:34px; background:var(--accent-gradient); -webkit-background-clip:text; color:transparent; }
+    .meta { color:var(--text-secondary); font-size:14px; }
+    .ring { width:82px; height:82px; border-radius:50%; display:grid; place-items:center; background:conic-gradient(var(--accent-1) 9%,rgba(255,255,255,.08) 0); position:relative; flex:none; }
+    .ring::after { content:''; position:absolute; inset:7px; border-radius:50%; background:var(--bg); }
+    .ring span { z-index:1; font:600 14px var(--font-mono); }
+    .timeline { position:relative; padding-left:32px; --mastered-pct:9%; }
+    .timeline::before { content:''; position:absolute; left:8px; top:8px; bottom:8px; width:2px; background:linear-gradient(to bottom,var(--accent-1) var(--mastered-pct),var(--border) var(--mastered-pct)); }
+    .node { position:relative; margin:0 0 16px; padding:18px; border:1px solid var(--border); border-radius:var(--radius); background:var(--surface); backdrop-filter:blur(12px); transition:.2s cubic-bezier(.4,0,.2,1); }
+    .node::before { content:''; position:absolute; left:-30px; top:25px; width:12px; height:12px; border-radius:50%; background:#34343c; border:2px solid var(--bg); }
+    .node.active { border-color:rgba(245,158,11,.55); }
+    .node.active::before { background:var(--accent-1); box-shadow:0 0 0 7px rgba(245,158,11,.12); animation:pulse 1.8s infinite; }
+    .node.mastered { border-color:rgba(52,211,153,.45); }
+    .node.mastered::before { background:var(--green); }
+    .node.mastered .badge { color:var(--green); border-color:rgba(52,211,153,.35); }
+    .node.mastered .bar i { width:100%; background:var(--green); }
+    .node:hover { transform:translateY(-2px); background:var(--surface-hover); }
+    .top { display:flex; justify-content:space-between; gap:16px; align-items:center; }
+    .title { font-weight:650; }
+    .badge { padding:4px 9px; border-radius:999px; font-size:12px; color:var(--text-secondary); border:1px solid var(--border); }
+    .active .badge { color:var(--amber); border-color:rgba(245,158,11,.35); }
+    .desc { margin-top:8px; color:var(--text-secondary); font-size:14px; }
+    .bar { height:4px; margin-top:14px; border-radius:4px; overflow:hidden; background:rgba(255,255,255,.07); }
+    .bar i { display:block; height:100%; width:0; background:var(--accent-gradient); }
+    .active .bar i { width:85%; }
+    footer { margin-top:28px; color:var(--text-secondary); font-size:13px; }
+    @keyframes pulse { 50% { box-shadow:0 0 0 11px rgba(245,158,11,0); } }
+    @media (max-width:480px) { main{padding:32px 18px} h1{font-size:27px}.ring{width:68px;height:68px} }
+  </style>
+</head>
+<body>
+  <main>
+    <header><div><h1>DodgeGame 架构</h1><div class="meta">从“属性很多”走向“职责边界清楚”</div></div><div class="ring"><span>100%</span></div></header>
+    <section class="timeline">
+      <article class="node mastered"><div class="top"><span class="title">1. 属性数量与类职责</span><span class="badge">已掌握 · 100%</span></div><div class="desc">理解字段多不一定等于设计差。</div><div class="bar"><i></i></div></article>
+      <article class="node mastered"><div class="top"><span class="title">2. 使用对象与承担职责</span><span class="badge">已掌握 · 100%</span></div><div class="desc">区分持有引用、调用服务和实现业务。</div><div class="bar"><i></i></div></article>
+      <article class="node mastered"><div class="top"><span class="title">3. 按变化原因判断内聚性</span><span class="badge">已掌握 · 100%</span></div><div class="desc">用“为什么会改”寻找合理边界。</div><div class="bar"><i></i></div></article>
+      <article class="node mastered"><div class="top"><span class="title">4. 本局数据与流程状态</span><span class="badge">已掌握 · 100%</span></div><div class="desc">识别可以一起迁移的数据和行为。</div><div class="bar"><i></i></div></article>
+      <article class="node mastered"><div class="top"><span class="title">5. 主游戏协调器的边界</span><span class="badge">已掌握 · 100%</span></div><div class="desc">保留清晰编排，避免演变成 God Object。</div><div class="bar"><i></i></div></article>
+    </section>
+    <footer>整体进度：100% · 已完成</footer>
+  </main>
+</body>
+</html>

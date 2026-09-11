@@ -7,36 +7,18 @@ import '../components/hud.dart';
 import '../components/player.dart';
 import '../models/game_settings.dart';
 import 'falling_item_spawner.dart';
-import 'game_state.dart';
+import 'game_flow.dart';
+import 'game_round.dart';
 import 'game_storage.dart';
+import 'overlay_mapping.dart';
 
 /// Dodge 游戏的总控制器。
 ///
-/// 它不负责绘制每个实体，而是负责协调游戏状态、计分、倒计时、
-/// 生成器、玩家、HUD 和 Overlay。
+/// 它不绘制实体，也不自己维护状态数据，而是协调各个对象：
+/// 输入交给玩家、生成节奏交给生成器、阶段交给 [GameFlow]、
+/// 单局数据交给 [GameRound]，其余组件只从它这里读取所需的值。
 class DodgeGame extends FlameGame
     with HasCollisionDetection, HasKeyboardHandlerComponents {
-  /// 待开始界面的 Overlay 名称。
-  static const String readyOverlay = 'ready';
-
-  /// 游戏进行中暂停按钮的 Overlay 名称。
-  static const String playingOverlay = 'playing';
-
-  /// 暂停界面的 Overlay 名称。
-  static const String pausedOverlay = 'paused';
-
-  /// 游戏结束界面的 Overlay 名称。
-  static const String gameOverOverlay = 'gameOver';
-
-  /// 设置界面的 Overlay 名称。
-  static const String settingsOverlay = 'settings';
-
-  /// 普通难度下的初始生成间隔。
-  static const double baseSpawnInterval = 1.0;
-
-  /// 普通难度下允许达到的最小生成间隔。
-  static const double baseMinSpawnInterval = 0.35;
-
   /// 创建游戏，并允许外部传入存储实现，方便测试和替换存储方式。
   DodgeGame({GameStorage? storage}) : storage = storage ?? GameStorage();
 
@@ -55,64 +37,44 @@ class DodgeGame extends FlameGame
   /// 当前游戏设置。
   GameSettings settings = const GameSettings();
 
-  /// 当前分数。
-  int score = 0;
+  /// 游戏阶段状态机。
+  final GameFlow flow = GameFlow();
 
-  /// 历史最高分。
+  /// 本局的分数、生命、时间与难度进度。
+  final GameRound round = GameRound();
+
+  /// 历史最高分。跨局保存，因此不属于 [round]。
   int highScore = 0;
 
-  /// 当前剩余生命数。
-  late int lives = maxLives;
+  /// 当前分数，供界面读取。
+  int get score => round.score;
 
-  /// 当前回合剩余时间，使用 double 保留帧级精度。
-  late double timeLeft = roundDuration.toDouble();
+  /// 本局是否创造了新的最高分，供结算界面读取。
+  bool get wasNewBest => round.wasNewBest;
 
-  /// 当前下落物生成间隔。
-  late double spawnInterval = initialSpawnInterval;
-
-  /// 本局是否创造了新的最高分。
-  bool wasNewBest = false;
-
-  /// 游戏当前状态。
-  GameState _state = GameState.ready;
-
-  /// 设置页面是否正在显示。
-  bool _showSettings = false;
-
-  /// 关闭设置页面后应该返回的游戏状态。
-  GameState _settingsReturnState = GameState.ready;
-
-  /// 对外暴露当前游戏状态。
-  GameState get state => _state;
+  /// 当前下落物生成间隔，供生成器读取。
+  double get spawnInterval => round.spawnInterval;
 
   /// 当前是否处于待开始状态。
-  bool get isReady => _state == GameState.ready;
+  bool get isReady => flow.isReady;
 
   /// 当前是否正在游戏。
-  bool get isPlaying => _state == GameState.playing;
+  bool get isPlaying => flow.isPlaying;
 
   /// 当前是否暂停。
-  bool get isPaused => _state == GameState.paused;
+  bool get isPaused => flow.isPaused;
 
   /// 当前是否已经结束。
-  bool get isGameOver => _state == GameState.gameOver;
+  bool get isGameOver => flow.isGameOver;
 
   /// 当前是否打开了设置页面。
-  bool get isSettingsOpen => _showSettings;
+  bool get isSettingsOpen => flow.isSettingsOpen;
 
   /// 当前回合总时长，来自设置。
   int get roundDuration => settings.roundDuration;
 
   /// 当前回合的最大生命数，来自设置。
   int get maxLives => settings.maxLives;
-
-  /// 根据难度计算本局开始时的生成间隔。
-  double get initialSpawnInterval =>
-      baseSpawnInterval * settings.difficulty.spawnIntervalFactor;
-
-  /// 根据难度计算生成间隔允许达到的最小值。
-  double get minSpawnInterval =>
-      baseMinSpawnInterval * settings.difficulty.spawnIntervalFactor;
 
   /// 设置 Flame 游戏画布的背景颜色。
   @override
@@ -124,9 +86,8 @@ class DodgeGame extends FlameGame
     // 先加载设置，后续组件创建时就能读取正确的难度和生命数。
     settings = await storage.loadSettings();
     highScore = await storage.loadHighScore();
-    lives = maxLives;
-    timeLeft = roundDuration.toDouble();
-    spawnInterval = initialSpawnInterval;
+    // 按加载好的设置初始化本局数据。
+    round.reset(settings);
 
     // 创建游戏实体和辅助组件。
     player = Player();
@@ -142,10 +103,7 @@ class DodgeGame extends FlameGame
 
   /// 从待开始状态进入游戏状态。
   void start() {
-    if (!isReady) {
-      return;
-    }
-    _state = GameState.playing;
+    flow.start();
     _syncOverlays();
   }
 
@@ -154,23 +112,15 @@ class DodgeGame extends FlameGame
     restart();
   }
 
-  /// 打开设置页面，并记录打开前的状态。
+  /// 打开设置页面；返回位置由 [GameFlow] 自己记住。
   void openSettings() {
-    if (_showSettings) {
-      return;
-    }
-    _settingsReturnState = _state;
-    _showSettings = true;
+    flow.openSettings();
     _syncOverlays();
   }
 
-  /// 关闭设置页面，并恢复进入设置前的状态。
+  /// 关闭设置页面，回到进入设置前的阶段。
   void closeSettings() {
-    if (!_showSettings) {
-      return;
-    }
-    _showSettings = false;
-    _state = _settingsReturnState;
+    flow.closeSettings();
     _syncOverlays();
   }
 
@@ -181,26 +131,14 @@ class DodgeGame extends FlameGame
     restart();
   }
 
-  /// 根据游戏状态和设置状态同步当前显示的 Flutter Overlay。
+  /// 把 [GameFlow] 的当前阶段同步到 Flutter Overlay。
+  ///
+  /// 这里只负责"执行"：该显示哪些 Overlay 由纯函数 [overlaysFor] 决定。
   void _syncOverlays() {
     // 先清除旧 Overlay，保证同一时间只显示正确的界面。
-    overlays.clear();
-    if (_showSettings) {
-      overlays.add(settingsOverlay);
-      return;
-    }
-
-    // 设置页面优先级最高，打开时不显示其他状态页面。
-    switch (_state) {
-      case GameState.ready:
-        overlays.add(readyOverlay);
-      case GameState.playing:
-        overlays.add(playingOverlay);
-      case GameState.paused:
-        overlays.add(pausedOverlay);
-      case GameState.gameOver:
-        overlays.add(gameOverOverlay);
-    }
+    overlays
+      ..clear()
+      ..addAll(overlaysFor(flow.phase));
   }
 
   /// 更新游戏倒计时。
@@ -212,16 +150,12 @@ class DodgeGame extends FlameGame
       return;
     }
 
-    // 用 dt 扣除真实经过的时间，保证不同帧率下倒计时一致。
-    timeLeft -= dt;
-    if (timeLeft <= 0) {
-      // 防止界面显示负数，并结束本局游戏。
-      timeLeft = 0;
-      hud.updateTimer(timeLeft);
+    // 用 dt 推进倒计时，保证不同帧率下计时一致。
+    final isTimeUp = round.advanceTimer(dt);
+    hud.updateTimer(round.timeLeft);
+    if (isTimeUp) {
       gameOver();
-      return;
     }
-    hud.updateTimer(timeLeft);
   }
 
   /// 创建并加入一个下落物。
@@ -235,14 +169,9 @@ class DodgeGame extends FlameGame
       return;
     }
 
-    score += 1;
-    hud.updateScore(score);
-    // 每成功躲过一个下落物，下一次生成间隔缩短 2%。
-    // clamp 保证难度不会超过设定的上下限。
-    spawnInterval = (spawnInterval * 0.98).clamp(
-      minSpawnInterval,
-      initialSpawnInterval,
-    );
+    // 计分和难度提升的规则都由本局数据自己维护。
+    round.registerDodge(settings);
+    hud.updateScore(round.score);
   }
 
   /// 处理玩家被下落物击中的逻辑。
@@ -254,10 +183,10 @@ class DodgeGame extends FlameGame
 
     // 移除造成伤害的下落物，避免同一个物体重复扣血。
     item.removeFromParent();
-    lives -= 1;
-    hud.updateLives(lives);
+    final isOutOfLives = round.loseLife();
+    hud.updateLives(round.lives);
 
-    if (lives <= 0) {
+    if (isOutOfLives) {
       // 生命耗尽后结束游戏。
       gameOver();
       return;
@@ -274,11 +203,11 @@ class DodgeGame extends FlameGame
       return;
     }
 
-    _state = GameState.gameOver;
-    wasNewBest = score > highScore;
-    if (wasNewBest) {
+    flow.gameOver();
+    round.wasNewBest = round.score > highScore;
+    if (round.wasNewBest) {
       // 只有超过历史最高分时才写入本地存储。
-      highScore = score;
+      highScore = round.score;
       hud.updateHighScore(highScore);
       storage.saveHighScore(highScore);
     }
@@ -287,13 +216,11 @@ class DodgeGame extends FlameGame
 
   /// 在游戏进行中和暂停中切换状态。
   void togglePause() {
-    if (isPlaying) {
-      _state = GameState.paused;
-    } else if (isPaused) {
-      _state = GameState.playing;
-    } else {
+    // 其他阶段下按暂停键不产生任何变化，也就不必刷新界面。
+    if (!isPlaying && !isPaused) {
       return;
     }
+    flow.togglePause();
     _syncOverlays();
   }
 
@@ -304,16 +231,11 @@ class DodgeGame extends FlameGame
       item.removeFromParent();
     }
 
-    // 恢复本局数据。
-    score = 0;
-    lives = maxLives;
-    timeLeft = roundDuration.toDouble();
-    spawnInterval = initialSpawnInterval;
-    wasNewBest = false;
+    // 数据与阶段各自重置，两个对象自己保证字段不会遗漏。
+    round.reset(settings);
+    flow.reset();
     // 重置生成器计时，避免下一局继承上一局的等待时间。
     itemSpawner.reset();
-    _state = GameState.ready;
-    _showSettings = false;
     // 重置实体和 HUD 的显示。
     player.resetPosition();
     hud.reset();

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>DodgeGame 概念图</title>
+  <link rel="stylesheet" href="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.css">
+  <script>window.EXCALIDRAW_ASSET_PATH="https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/prod/";</script>
+  <script type="importmap">{"imports":{"react":"https://esm.sh/react@19.0.0","react/jsx-runtime":"https://esm.sh/react@19.0.0/jsx-runtime","react-dom":"https://esm.sh/react-dom@19.0.0","react-dom/client":"https://esm.sh/react-dom@19.0.0/client"}}</script>
+  <style>*{margin:0;padding:0;box-sizing:border-box}html,body,#app{height:100%;width:100%}</style>
+</head>
+<body><div id="app"></div><script type="module">
+  import React from "https://esm.sh/react@19.0.0";
+  import {createRoot} from "https://esm.sh/react-dom@19.0.0/client";
+  import * as E from "https://esm.sh/@excalidraw/excalidraw@0.18.0/dist/dev/index.js?external=react,react-dom";
+  const data=[
+    {type:"text",x:50,y:70,width:580,height:36,text:"DodgeGame 职责边界 · 已掌握",fontSize:28,fontFamily:1,textAlign:"center",strokeColor:"#2f9e44"},
+    {type:"rectangle",x:50,y:180,width:210,height:90,backgroundColor:"#ffd8a8",strokeColor:"#e8590c",roundness:{type:3}},
+    {type:"text",x:76,y:201,width:158,height:48,text:"DodgeGame\n协调器",fontSize:22,fontFamily:3,textAlign:"center"},
+    {type:"arrow",x:260,y:225,width:100,height:-155,strokeColor:"#495057"},
+    {type:"arrow",x:260,y:225,width:100,height:-52,strokeColor:"#495057"},
+    {type:"arrow",x:260,y:225,width:100,height:52,strokeColor:"#495057"},
+    {type:"arrow",x:260,y:225,width:100,height:155,strokeColor:"#495057"},
+    {type:"arrow",x:260,y:225,width:100,height:258,strokeColor:"#495057"},
+    {type:"rectangle",x:360,y:25,width:270,height:82,backgroundColor:"#b2f2bb",strokeColor:"#2f9e44",roundness:{type:3}},
+    {type:"text",x:390,y:42,width:210,height:48,text:"GameFlow\n只管理流程状态",fontSize:20,fontFamily:1,textAlign:"center"},
+    {type:"rectangle",x:360,y:128,width:270,height:82,backgroundColor:"#99e9f2",strokeColor:"#0c8599",roundness:{type:3}},
+    {type:"text",x:385,y:145,width:220,height:48,text:"Overlay 协调层\n状态 → 界面",fontSize:20,fontFamily:1,textAlign:"center"},
+    {type:"rectangle",x:360,y:231,width:270,height:82,backgroundColor:"#ffec99",strokeColor:"#f08c00",roundness:{type:3}},
+    {type:"text",x:390,y:248,width:210,height:48,text:"GameSession\n本局数据",fontSize:20,fontFamily:1,textAlign:"center"},
+    {type:"rectangle",x:360,y:334,width:270,height:82,backgroundColor:"#e9ecef",strokeColor:"#495057",roundness:{type:3}},
+    {type:"text",x:390,y:351,width:210,height:48,text:"GameStorage\n持久化实现",fontSize:20,fontFamily:1,textAlign:"center"},
+    {type:"rectangle",x:360,y:437,width:270,height:92,backgroundColor:"#fcc2d7",strokeColor:"#d6336c",roundness:{type:3}},
+    {type:"text",x:382,y:454,width:226,height:58,text:"Player / HUD / Spawner\n各自实现组件职责",fontSize:19,fontFamily:1,textAlign:"center"}
+  ];
+  const elements=E.convertToExcalidrawElements(data);
+  function App(){return React.createElement("div",{style:{height:"100%",width:"100%"}},React.createElement(E.Excalidraw,{initialData:{elements,appState:{viewBackgroundColor:"#ffffff"}},langCode:"zh-CN"}));}
+  createRoot(document.getElementById("app")).render(React.createElement(App));
+  </script></body></html>
